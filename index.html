@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#050d08">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Digital Pamukan - Aplikasi Premi Panen Realtime</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    
+    <style>
+        body.premi-active, html.premi-active { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; -webkit-text-size-adjust: 100%; }
+        header, footer, sidebar, #sidebar, .sidebar, #header, .header, .fauxcolumn-outer, #navbar-iframe, .blog-pager, .post-footer, .comments, #comments, .date-header, h2.date-header, .date-posts { display: none !important; }
+        
+        :root, [data-theme="dark"] {
+            --prm-bg: #050d08; --prm-surface: #0b1910; --prm-surface-elevated: #112618;
+            --prm-banner-start: #0f3d1e; --prm-banner-end: #092613;
+            --prm-text: #f0fdf4; --prm-text-muted: #86efac; --prm-text-sub: #9ca3af;
+            --prm-primary: #34d374; --prm-primary-hover: #22c55e; --prm-primary-text: #03220f;
+            --prm-primary-soft: rgba(52, 211, 116, 0.14); --prm-accent: #fbbf24;
+            --prm-accent-soft: rgba(251, 191, 36, 0.15); --prm-danger: #f87171;
+            --prm-danger-soft: rgba(248, 113, 113, 0.16); --prm-info: #38bdf8;
+            --prm-info-soft: rgba(56, 189, 248, 0.15); --prm-border: #1b3b26; --prm-border-bright: #2b633e;
+            --prm-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+            --prm-hover-shadow: 0 16px 32px -6px rgba(0, 0, 0, 0.7), 0 0 22px rgba(52, 211, 116, 0.22); --prm-radius: 14px;
+        }
+        [data-theme="light"] {
+            --prm-bg: #edf7f0; --prm-surface: #ffffff; --prm-surface-elevated: #f3faf5;
+            --prm-banner-start: #0c4a24; --prm-banner-end: #063016;
+            --prm-text: #052e16; --prm-text-muted: #15803d; --prm-text-sub: #4b5563;
+            --prm-primary: #16a34a; --prm-primary-hover: #15803d; --prm-primary-text: #ffffff;
+            --prm-primary-soft: #dcfce7; --prm-accent: #d97706; --prm-accent-soft: #fef3c7;
+            --prm-danger: #dc2626; --prm-danger-soft: #fee2e2; --prm-info: #0284c7;
+            --prm-info-soft: #e0f2fe; --prm-border: #bbf7d0; --prm-border-bright: #86efac;
+            --prm-shadow: 0 4px 12px rgba(5, 46, 22, 0.08);
+            --prm-hover-shadow: 0 14px 28px -4px rgba(5, 46, 22, 0.16), 0 0 18px rgba(22, 163, 74, 0.18);
+        }
+
+        #premi-app { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background-color: var(--prm-bg); color: var(--prm-text); font-family: 'Inter', sans-serif; z-index: 999999; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
+        #premi-app * { box-sizing: inherit; -webkit-tap-highlight-color: transparent; }
+        .prm-container { max-width: 1080px; margin: 0 auto; width: 100%; padding: 0.85rem 1.15rem 2.5rem 1.15rem; flex-grow: 1; display: flex; flex-direction: column; gap: 0.9rem; }
+        .prm-topbar { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; flex-wrap: wrap; gap: 0.5rem; }
+        .prm-brand-mini { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.05em; color: var(--prm-text); text-transform: uppercase; }
+        
+        .prm-pill-btn { background: var(--prm-surface); color: var(--prm-text); border: 1px solid var(--prm-border-bright); padding: 0.5rem 0.85rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s, background-color 0.25s; min-height: 36px; }
+        .prm-pill-btn:hover { border-color: var(--prm-primary); background: var(--prm-surface-elevated); transform: translateY(-3px); box-shadow: var(--prm-hover-shadow); }
+        .prm-hero-banner { background: linear-gradient(135deg, var(--prm-banner-start) 0%, var(--prm-banner-end) 100%); border: 1px solid var(--prm-border-bright); border-radius: 16px; padding: 1.5rem 1.15rem; text-align: center; position: relative; overflow: hidden; }
+        .prm-hero-pill { display: inline-block; padding: 0.25rem 0.8rem; border-radius: 9999px; background: rgba(52, 211, 116, 0.15); border: 1px solid rgba(52, 211, 116, 0.4); color: #bbf7d0; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .prm-hero-title { font-size: 1.85rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.03em; text-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .prm-hero-sub { font-size: 0.85rem; color: #d1fae5; margin: 0.35rem 0 0 0; opacity: 0.92; }
+        
+        .prm-role-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .prm-role-card { background: var(--prm-surface); border: 1.5px solid var(--prm-border-bright); border-radius: 12px; padding: 1rem 1.1rem; cursor: pointer; transition: transform 0.28s, box-shadow 0.28s, border-color 0.28s, background-color 0.28s; text-align: left; display: flex; flex-direction: column; gap: 0.25rem; color: var(--prm-text); will-change: transform, box-shadow; }
+        .prm-role-card:hover { border-color: var(--prm-primary); background: var(--prm-surface-elevated); transform: translateY(-6px); box-shadow: var(--prm-hover-shadow); }
+        .prm-role-card.active { background: var(--prm-primary); border-color: var(--prm-primary); color: var(--prm-primary-text); box-shadow: 0 8px 24px rgba(52, 211, 116, 0.32); }
+        .prm-role-card.active:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(52, 211, 116, 0.42); }
+        .prm-role-card .role-title { font-size: 0.98rem; font-weight: 800; display: flex; align-items: center; gap: 0.45rem; }
+        .prm-role-card .role-desc { font-size: 0.76rem; opacity: 0.88; padding-left: 1.6rem; line-height: 1.35; }
+        
+        .prm-text-center { text-align: center; } .prm-text-right { text-align: right; } .prm-flex { display: flex; } .prm-flex-col { display: flex; flex-direction: column; } .prm-flex-wrap { flex-wrap: wrap; } .prm-items-center { align-items: center; } .prm-justify-between { justify-content: space-between; }
+        .prm-gap-1 { gap: 0.25rem; } .prm-gap-2 { gap: 0.5rem; } .prm-gap-3 { gap: 0.75rem; } .prm-gap-4 { gap: 1rem; }
+        .prm-p-3 { padding: 0.75rem; } .prm-p-4 { padding: 1rem; } .prm-p-6 { padding: 1.5rem; }
+        .prm-mt-2 { margin-top: 0.5rem; } .prm-mt-4 { margin-top: 1rem; } .prm-mb-2 { margin-bottom: 0.5rem; } .prm-mb-4 { margin-bottom: 1rem; } .prm-w-full { width: 100%; }
+        .prm-text-xs { font-size: 0.75rem; } .prm-text-sm { font-size: 0.875rem; } .prm-text-lg { font-size: 1.125rem; font-weight: 700; } .prm-text-xl { font-size: 1.25rem; font-weight: 800; } .prm-text-primary { color: var(--prm-primary); } .prm-text-accent { color: var(--prm-accent); } .prm-text-danger { color: var(--prm-danger); } .prm-text-info { color: var(--prm-info); } .prm-text-muted { color: var(--prm-text-sub); }
+        
+        .prm-card { background: var(--prm-surface); border-radius: var(--prm-radius); box-shadow: var(--prm-shadow); border: 1px solid var(--prm-border); padding: 1.15rem; transition: transform 0.28s, box-shadow 0.28s, border-color 0.28s, background-color 0.28s; will-change: transform, box-shadow; }
+        .prm-btn { background: var(--prm-primary); color: var(--prm-primary-text); border: none; padding: 0.75rem 1.1rem; border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: transform 0.22s, box-shadow 0.22s, background-color 0.2s, border-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-height: 44px; text-decoration: none; }
+        .prm-btn:hover { background: var(--prm-primary-hover); transform: translateY(-2px); box-shadow: 0 8px 18px -4px rgba(52, 211, 116, 0.35); }
+        .prm-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .prm-btn-secondary { background: var(--prm-surface-elevated); border: 1px solid var(--prm-border-bright); color: var(--prm-text); font-weight: 600; }
+        .prm-btn-secondary:hover { border-color: var(--prm-primary); background: var(--prm-primary-soft); box-shadow: var(--prm-hover-shadow); }
+        .prm-btn-secondary.active { background: var(--prm-primary); color: var(--prm-primary-text); border-color: var(--prm-primary); font-weight: 700; }
+        .prm-btn-danger { background: var(--prm-danger); color: #fff; } .prm-btn-danger:hover { background: #ef4444; box-shadow: 0 8px 18px -4px rgba(248, 113, 113, 0.4); }
+        .prm-btn-sm { padding: 0.45rem 0.75rem; font-size: 0.78rem; border-radius: 8px; min-height: 36px; }
+        .prm-input { width: 100%; padding: 0.75rem 0.9rem; border: 1.5px solid var(--prm-border-bright); border-radius: 10px; background: var(--prm-surface-elevated); color: var(--prm-text); font-family: inherit; font-size: 16px; font-weight: 500; min-height: 46px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .prm-input:focus { outline: none; border-color: var(--prm-primary); box-shadow: 0 0 0 3px var(--prm-primary-soft); }
+        
+        .prm-table-container { overflow-x: auto; width: 100%; border-radius: 10px; border: 1px solid var(--prm-border-bright); -webkit-overflow-scrolling: touch; }
+        .prm-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.84rem; }
+        .prm-table th, .prm-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--prm-border); white-space: nowrap; }
+        .prm-table th { background: var(--prm-surface-elevated); color: var(--prm-text-muted); font-weight: 700; position: sticky; top: 0; z-index: 2; text-transform: uppercase; font-size: 0.72rem; }
+        .prm-table tbody tr { transition: background-color 0.18s; } .prm-table tbody tr:hover { background: var(--prm-surface-elevated); }
+        .prm-table tfoot td { background: var(--prm-surface-elevated); font-weight: 800; border-top: 2px solid var(--prm-border-bright); }
+        .prm-mobile-day-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .prm-day-card { background: var(--prm-surface-elevated); border: 1.5px solid var(--prm-border-bright); border-radius: 12px; padding: 0.95rem; display: flex; flex-direction: column; gap: 0.65rem; transition: transform 0.28s, box-shadow 0.28s, border-color 0.28s; }
+        .prm-day-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--prm-border); padding-bottom: 0.55rem; flex-wrap: wrap; gap: 0.4rem; }
+        .prm-day-card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem; font-size: 0.82rem; }
+        .prm-day-stat { background: var(--prm-surface); padding: 0.5rem 0.65rem; border-radius: 8px; border: 1px solid var(--prm-border); transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s; }
+        .prm-day-stat-label { font-size: 0.7rem; color: var(--prm-text-sub); } .prm-day-stat-val { font-size: 0.92rem; font-weight: 700; margin-top: 0.1rem; }
+        .prm-grid { display: grid; gap: 0.75rem; } .prm-grid-cols-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } .prm-grid-cols-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } .prm-grid-cols-4 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); } .prm-grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
+        
+        #prm-toast { position: fixed; bottom: 16px; right: 16px; left: 16px; margin: 0 auto; padding: 0.9rem 1.15rem; border-radius: 10px; background: var(--prm-surface-elevated); color: var(--prm-text); box-shadow: var(--prm-shadow); border: 1px solid var(--prm-border-bright); border-left: 5px solid var(--prm-primary); transform: translateY(150%); transition: transform 0.3s; z-index: 9999999; max-width: 440px; font-size: 0.875rem; font-weight: 600; }
+        #prm-toast.show { transform: translateY(0); } #prm-toast.error { border-left-color: var(--prm-danger); }
+        .prm-loader { border: 3px solid var(--prm-border); border-top: 3px solid var(--prm-primary); border-radius: 50%; width: 20px; height: 20px; animation: prm-spin 1s linear infinite; display: inline-block; }
+        @keyframes prm-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .prm-hidden { display: none !important; }
+        .prm-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 2000000; padding: 0.75rem; backdrop-filter: blur(3px); }
+        .prm-modal { background: var(--prm-surface); border: 1px solid var(--prm-border-bright); padding: 1.25rem; border-radius: var(--prm-radius); width: 100%; max-width: 1000px; box-shadow: var(--prm-shadow); max-height: 90vh; overflow-y: auto; color: var(--prm-text) !important; }
+        .prm-modal table, .prm-modal th, .prm-modal td, .prm-modal span, .prm-modal div, .prm-modal h3 { color: var(--prm-text) !important; }
+        .badge { padding: 0.22rem 0.6rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; }
+        .badge-success { background: var(--prm-primary-soft); color: var(--prm-primary); border: 1px solid rgba(52, 211, 116, 0.3); }
+        .badge-warning { background: var(--prm-accent-soft); color: var(--prm-accent); border: 1px solid rgba(251, 191, 36, 0.3); }
+        .badge-danger { background: var(--prm-danger-soft); color: var(--prm-danger); border: 1px solid rgba(248, 113, 113, 0.3); }
+        .prm-help-footer { background: var(--prm-surface); border: 1px solid var(--prm-border); border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.78rem; color: var(--prm-text-sub); margin-top: 0.5rem; line-height: 1.45; }
+        
+        @media (hover: hover) {
+            .prm-card:hover { transform: translateY(-5px); border-color: var(--prm-primary); box-shadow: var(--prm-hover-shadow); }
+            .prm-day-card:hover { transform: translateY(-5px); border-color: var(--prm-primary); box-shadow: var(--prm-hover-shadow); }
+        }
+        @media (max-width: 768px) {
+            .prm-container { padding: 0.65rem 0.75rem 2.5rem 0.75rem; gap: 0.75rem; }
+            .prm-hero-banner { padding: 1.15rem 0.9rem; border-radius: 14px; }
+            .prm-role-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+            .prm-grid-cols-5 { grid-template-columns: repeat(2, 1fr); } .prm-grid-cols-5 > div:last-child { grid-column: span 2; }
+            .prm-admin-filter-row { flex-direction: column; align-items: stretch !important; } .prm-admin-filter-row > div { width: 100% !important; }
+            .prm-date-range-box { width: 100%; display: grid !important; grid-template-columns: 1fr auto 1fr; align-items: center; } 
+            .prm-date-range-box input { width: 100% !important; }
+            .prm-admin-tabs { display: grid !important; grid-template-columns: 1fr; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="premi-app">
+        <div class="prm-container">
+            <div class="prm-topbar">
+                <div class="prm-brand-mini"><i class="ph-fill ph-palm-tree prm-text-primary" style="font-size: 1.2rem;"></i><span>KEBUN PAMUKAN</span><span id="conn-badge-top" class="badge badge-success">ONLINE</span></div>
+                <div class="prm-flex prm-items-center prm-gap-1 prm-flex-wrap">
+                    <button type="button" class="prm-pill-btn" onclick="showModalConfig()"><i class="ph ph-plugs-connected"></i> <span>Koneksi DB</span></button>
+                    <button type="button" class="prm-pill-btn" id="btn-theme-toggle" onclick="toggleTheme()"><i class="ph-fill ph-sun" style="color: #fbbf24;"></i> <span id="theme-label">Mode terang</span></button>
+                    <button type="button" id="btn-logout-top" class="prm-pill-btn prm-hidden" style="border-color: var(--prm-danger); color: var(--prm-danger);" onclick="logout()"><i class="ph ph-sign-out"></i> <span>Keluar</span></button>
+                </div>
+            </div>
+
+            <div class="prm-hero-banner">
+                <div class="prm-hero-pill">PTPN IV REGIONAL V</div>
+                <h1 class="prm-hero-title">DIGITAL PAMUKAN</h1>
+                <p class="prm-hero-sub">Portal Informasi Premi Panen Realtime & Operasional Kebun Pamukan</p>
+            </div>
+
+            <div id="view-login" class="prm-flex-col prm-gap-3">
+                <div class="prm-text-center prm-text-xs" style="letter-spacing: 0.08em; font-weight: 700; color: var(--prm-text-sub);">PILIH AKSES LOGIN ANDA</div>
+                <div class="prm-role-grid">
+                    <button type="button" id="role-btn-pemanen" class="prm-role-card active" onclick="selectLoginRole('pemanen')">
+                        <div class="role-title"><i class="ph-bold ph-user" style="font-size: 1.2rem;"></i><span>Saya Pemanen</span></div>
+                        <div class="role-desc">Login dengan NIK untuk melihat premi saya di HP</div>
+                    </button>
+                    <button type="button" id="role-btn-admin" class="prm-role-card" onclick="selectLoginRole('admin')">
+                        <div class="role-title"><i class="ph-bold ph-shield-check" style="font-size: 1.2rem;"></i><span>Krani / Admin</span></div>
+                        <div class="role-desc">Login petugas untuk input & kelola data rekon afdeling</div>
+                    </button>
+                </div>
+
+                <div class="prm-card" style="max-width: 560px; margin: 0 auto; width: 100%; border-color: var(--prm-border-bright);">
+                    <div class="prm-flex prm-justify-between prm-items-center prm-mb-4 prm-flex-wrap prm-gap-2">
+                        <div class="prm-flex prm-items-center prm-gap-2"><span class="badge badge-success" style="padding: 0.45rem;"><i class="ph-bold ph-coins" style="font-size: 1.1rem;"></i></span><div><div class="prm-text-lg" id="login-card-title" style="line-height: 1.2;">Cek Premi Pemanen</div><div class="prm-text-xs prm-text-muted" id="login-card-sub">Masukkan NIK Pemanen Anda</div></div></div>
+                    </div>
+                    <form id="prm-form-login" class="prm-flex-col prm-gap-3">
+                        <div><label class="prm-text-sm" id="label-login-user" style="font-weight: 600;">NIK Pemanen</label><input type="text" id="login-username" class="prm-input prm-mt-2" placeholder="Ketik NIK Anda (contoh: 12345)" required autocomplete="off" onkeyup="checkAutoRole(this.value)"></div>
+                        <div><label class="prm-text-sm" style="font-weight: 600;">Password</label><div class="prm-flex prm-gap-2 prm-mt-2"><input type="password" id="login-password" class="prm-input" placeholder="Password (bawaan: 123)" value="123" required autocomplete="off"><button type="button" class="prm-btn prm-btn-secondary" onclick="togglePassword()" style="padding: 0 1rem;" title="Lihat Password"><i class="ph-bold ph-eye" style="font-size:1.15rem;"></i></button></div><div id="pemanen-pw-note" class="prm-text-xs prm-text-muted prm-mt-2">*Password standar pemanen adalah <strong>123</strong> (sudah terisi otomatis).</div></div>
+                        <button type="submit" class="prm-btn prm-mt-2" id="btn-login-submit" style="padding: 0.9rem; font-size: 0.98rem;"><span id="login-text"><i class="ph-bold ph-arrow-right"></i> Buka Hasil Panen & Premi Saya</span><div id="login-loader" class="prm-loader prm-hidden"></div></button>
+                        <div id="login-error" class="prm-text-danger prm-text-xs prm-text-center prm-hidden" style="padding:0.65rem; background:var(--prm-danger-soft); border-radius:8px; font-weight:600;"></div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view-main" class="prm-hidden prm-flex-col prm-gap-4">
+                <div id="alert-password" class="prm-card prm-hidden" style="background: var(--prm-accent-soft); border-color: var(--prm-accent); padding: 0.85rem 1.1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;"><div class="prm-flex prm-items-center prm-gap-2"><i class="ph-fill ph-warning-circle prm-text-accent" style="font-size:1.3rem"></i><span class="prm-text-xs">Anda masih memakai password standar. Password HARUS diganti dulu agar data premi bisa dibuka.</span></div><button class="prm-btn prm-btn-secondary prm-btn-sm" onclick="showModalPassword(true)">Ganti Password</button></div>
+                <div id="global-loader" class="prm-text-center prm-p-6 prm-hidden"><div class="prm-loader"></div><p class="prm-text-muted prm-text-sm prm-mt-2">Memuat & menghitung premi otomatis...</p></div>
+
+                <div id="dashboard-karyawan" class="prm-hidden prm-flex-col prm-gap-3">
+                    <div class="prm-card prm-flex prm-justify-between prm-items-center prm-flex-wrap prm-gap-2" style="border-color: var(--prm-border-bright);">
+                        <div><div class="prm-text-xs prm-text-muted">Pemanen Aktif</div><div class="prm-text-lg"><span id="kar-nama-header">-</span></div><div class="prm-text-xs prm-mt-2">NIK: <strong class="prm-text-primary" id="kar-nik">-</strong> • Afdeling: <span class="badge badge-success" id="kar-afdeling">-</span></div></div>
+                        <div class="prm-flex prm-gap-2 prm-items-center prm-flex-wrap"><select id="kar-periode-select" class="prm-input prm-btn-sm" style="width:auto; min-height:36px; padding:0.25rem 0.5rem;" onchange="loadKaryawanData(this.value)"></select><button class="prm-btn prm-btn-secondary prm-btn-sm" onclick="loadKaryawanData()"><i class="ph-bold ph-arrows-clockwise"></i> Segarkan</button><button class="prm-btn prm-btn-secondary prm-btn-sm" onclick="cetakSlipPremi()"><i class="ph-bold ph-printer"></i> Cetak Slip PDF</button><button class="prm-btn prm-btn-danger prm-btn-sm" onclick="logout()"><i class="ph-bold ph-sign-out"></i> Keluar</button></div>
+                    </div>
+                    <div class="prm-card prm-text-center" style="background: linear-gradient(135deg, var(--prm-banner-start) 0%, var(--prm-surface) 100%); border: 2px solid var(--prm-primary);">
+                        <div class="badge badge-success prm-mb-2">TOTAL PREMI BERSIH DITERIMA</div>
+                        <div style="font-size: 2.55rem; font-weight: 800; color: var(--prm-primary); margin: 0.2rem 0; letter-spacing: -0.02em;" id="kar-premi-bersih">Rp 0</div>
+                        <p class="prm-text-xs" style="margin:0; color: var(--prm-text); opacity: 0.9;">Dihitung otomatis dari data hasil rekon & dikurangi denda</p>
+                    </div>
+                    <div class="prm-grid prm-grid-cols-5">
+                        <div class="prm-card prm-text-center prm-p-3"><div class="prm-text-muted prm-text-xs">Hari Kerja</div><div class="prm-text-xl prm-mt-2" id="kar-hk">0 Hari</div></div>
+                        <div class="prm-card prm-text-center prm-p-3"><div class="prm-text-muted prm-text-xs">Kilogram TBS</div><div class="prm-text-xl prm-mt-2 prm-text-primary" id="kar-kg">0 Kg</div></div>
+                        <div class="prm-card prm-text-center prm-p-3"><div class="prm-text-muted prm-text-xs">Berondolan</div><div class="prm-text-xl prm-mt-2 prm-text-info" id="kar-brd-kg">0 Kg</div></div>
+                        <div class="prm-card prm-text-center prm-p-3"><div class="prm-text-muted prm-text-xs">Premi Kotor</div><div class="prm-text-xl prm-mt-2 prm-text-accent" id="kar-premi-kotor">Rp 0</div></div>
+                        <div class="prm-card prm-text-center prm-p-3"><div class="prm-text-muted prm-text-xs">Potongan Denda</div><div class="prm-text-xl prm-mt-2 prm-text-danger" id="kar-denda">Rp 0</div></div>
+                    </div>
+                    <div class="prm-flex prm-justify-between prm-items-center prm-mt-2">
+                        <div><h3 class="prm-text-lg" style="margin:0;">Rincian Panen Harian</h3></div>
+                        <div class="prm-flex prm-gap-1"><button type="button" id="btn-view-cards" class="prm-btn prm-btn-secondary prm-btn-sm active" onclick="switchKaryawanDetailView('cards')"><i class="ph-bold ph-cards"></i> Kartu HP</button><button type="button" id="btn-view-table" class="prm-btn prm-btn-secondary prm-btn-sm" onclick="switchKaryawanDetailView('table')"><i class="ph-bold ph-table"></i> Tabel Lengkap</button></div>
+                    </div>
+                    <div id="kar-detail-cards" class="prm-mobile-day-list"></div>
+                    <div id="kar-detail-table" class="prm-card prm-hidden">
+                        <div class="prm-table-container">
+                            <table class="prm-table" id="table-rincian-karyawan">
+                                <thead><tr><th>Tanggal Panen</th><th>Blok</th><th>Status Blok</th><th class="prm-text-right">Basis (Kg)</th><th class="prm-text-right">Kilogram</th><th class="prm-text-right">Berondolan</th><th class="prm-text-right">Premi Produksi</th><th class="prm-text-right">Premi Berondolan</th><th class="prm-text-right prm-text-danger">Potongan Denda</th><th class="prm-text-right">Premi Bersih</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="prm-card"><h3 class="prm-mb-4 prm-text-lg" style="margin-top:0;">Grafik Premi Bersih Harian</h3><div style="position: relative; height:210px; width:100%"><canvas id="chartKaryawan"></canvas></div></div>
+                </div>
+
+                <div id="dashboard-admin" class="prm-hidden prm-flex-col prm-gap-4">
+                    <div class="prm-flex prm-justify-between prm-items-center prm-flex-wrap prm-gap-2" style="border-bottom: 1px solid var(--prm-border-bright); padding-bottom: 0.75rem;">
+                        <div class="prm-flex prm-gap-2 prm-flex-wrap prm-admin-tabs">
+                            <button class="prm-btn prm-btn-secondary admin-tab active" onclick="switchAdminTab('tab-monev')"><i class="ph-bold ph-chart-bar"></i> 01 • Rekap</button>
+                            <button class="prm-btn prm-btn-secondary admin-tab" onclick="switchAdminTab('tab-input-rekon')"><i class="ph-bold ph-plus-circle"></i> 02 • Input Rekon</button>
+                            <button class="prm-btn prm-btn-secondary admin-tab" onclick="switchAdminTab('tab-master-blok')"><i class="ph-bold ph-sliders"></i> 03 • Master Blok</button>
+                            <button class="prm-btn prm-btn-secondary admin-tab" onclick="switchAdminTab('tab-panen')"><i class="ph-bold ph-database"></i> 04 • Cek DB</button>
+                            <button class="prm-btn prm-btn-secondary admin-tab" onclick="switchAdminTab('tab-unduh-excel')"><i class="ph-bold ph-download-simple"></i> 05 • Unduh Excel</button>
+                        </div>
+                    </div>
+
+                    <div id="tab-monev" class="admin-tab-content prm-flex-col prm-gap-4">
+                        <div class="prm-card prm-flex prm-gap-3 prm-items-center prm-flex-wrap prm-admin-filter-row">
+                            <div class="prm-flex-col" style="min-width: 150px;"><label class="prm-text-xs prm-text-muted">Afdeling</label><select id="filter-afdeling" class="prm-input" style="margin-top: 0.25rem;"><option value="SEMUA">Semua Afdeling</option><option value="AFD01">AFD01</option><option value="AFD02">AFD02</option><option value="AFD03">AFD03</option><option value="AFD04">AFD04</option></select></div>
+                            <div class="prm-flex-col"><label class="prm-text-xs prm-text-muted">Periode Panen</label><div class="prm-flex prm-gap-2 prm-items-center prm-date-range-box" style="margin-top: 0.25rem;"><input type="date" id="filter-tgl-awal" class="prm-input" style="width:155px"><span class="prm-text-muted">s/d</span><input type="date" id="filter-tgl-akhir" class="prm-input" style="width:155px"></div></div>
+                            <div class="prm-flex prm-gap-2 prm-flex-wrap" style="align-self: flex-end;"><button class="prm-btn" onclick="loadAdminData(false)"><i class="ph-bold ph-funnel"></i> Tampilkan</button><button class="prm-btn prm-btn-secondary" onclick="resetAdminFilter()"><i class="ph-bold ph-calendar-blank"></i> Semua Tanggal</button><button class="prm-btn prm-btn-secondary" onclick="kunciPeriodeHP()"><i class="ph-bold ph-lock-key"></i> Kunci Periode HP</button></div>
+                        </div>
+                        <div class="prm-grid prm-grid-cols-5">
+                            <div class="prm-card prm-p-3"><div class="prm-text-muted prm-text-xs">Kg TBS</div><div class="prm-text-xl prm-mt-2" id="adm-kpi-kg">0 Kg</div></div>
+                            <div class="prm-card prm-p-3"><div class="prm-text-muted prm-text-xs">Berondolan</div><div class="prm-text-xl prm-mt-2 prm-text-info" id="adm-kpi-brd-kg">0 Kg</div></div>
+                            <div class="prm-card prm-p-3"><div class="prm-text-muted prm-text-xs">Premi Kotor</div><div class="prm-text-xl prm-mt-2 prm-text-accent" id="adm-kpi-premi">Rp 0</div></div>
+                            <div class="prm-card prm-p-3"><div class="prm-text-muted prm-text-xs">Denda</div><div class="prm-text-xl prm-mt-2 prm-text-danger" id="adm-kpi-denda">Rp 0</div></div>
+                            <div class="prm-card prm-p-3" style="border-color: var(--prm-primary);"><div class="prm-text-muted prm-text-xs">Premi Bersih</div><div class="prm-text-xl prm-mt-2 prm-text-primary" id="adm-kpi-bersih">Rp 0</div></div>
+                        </div>
+                        
+                        <div class="prm-card prm-mb-2">
+                            <h3 class="prm-text-lg" style="margin:0 0 0.5rem 0;">A. Rekap Per Afdeling</h3>
+                            <div class="prm-table-container">
+                                <table class="prm-table" id="table-rekap-afd">
+                                    <thead><tr><th>Afdeling</th><th class="prm-text-right">Pem. Aktif</th><th class="prm-text-right">Pem-Hari</th><th class="prm-text-right">Tandan</th><th class="prm-text-right">Kg TBS</th><th class="prm-text-right">BJR</th><th class="prm-text-right">Kg/HOK</th><th class="prm-text-right">Brondolan</th><th class="prm-text-right">Premi Kotor</th><th class="prm-text-right prm-text-danger">Denda</th><th class="prm-text-right prm-text-primary">Premi Bersih</th><th class="prm-text-right">% Total Kg</th></tr></thead>
+                                    <tbody></tbody><tfoot></tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="prm-card">
+                            <div class="prm-flex prm-justify-between prm-items-center prm-mb-4 prm-flex-wrap prm-gap-2"><div><h3 class="prm-text-lg" style="margin:0;">B. Daftar Hasil Panen & Premi</h3></div><input type="text" id="search-pemanen" class="prm-input prm-search-input" style="width: 260px;" placeholder="Cari NIK atau Nama..." onkeyup="filterTabelPemanen()"></div>
+                            <div class="prm-table-container" style="max-height: 480px; overflow-y:auto;">
+                                <table class="prm-table" id="table-admin-pemanen"><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Afd</th><th class="prm-text-right">HK</th><th class="prm-text-right">Kg TBS</th><th class="prm-text-right">Brd (Kg)</th><th class="prm-text-right">Premi Prod</th><th class="prm-text-right">Premi Brd</th><th class="prm-text-right">Kotor</th><th class="prm-text-right prm-text-danger">Denda</th><th class="prm-text-right">Bersih</th><th class="prm-text-center">Aksi</th></tr></thead><tbody></tbody><tfoot></tfoot></table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-input-rekon" class="admin-tab-content prm-hidden prm-flex-col prm-gap-4">
+                        <div class="prm-card">
+                            <h3 class="prm-text-lg" style="margin:0 0 0.25rem 0;">Input Data Panen Harian</h3>
+                            <form id="form-input-rekon" class="prm-grid prm-grid-cols-4 prm-mt-4">
+                                <div><label class="prm-text-xs prm-text-muted">1. Tanggal Panen</label><input type="date" id="inp-tgl" class="prm-input prm-mt-2" required onchange="previewAutoCalc()"></div>
+                                <div><label class="prm-text-xs prm-text-muted">2. NIK Pemanen</label><input type="text" id="inp-nik" class="prm-input prm-mt-2" required></div>
+                                <div><label class="prm-text-xs prm-text-muted">3. Nama Pemanen</label><input type="text" id="inp-nama" class="prm-input prm-mt-2" required></div>
+                                <div><label class="prm-text-xs prm-text-muted">4. Kode Blok</label><input type="text" id="inp-blok" list="list-master-blok" class="prm-input prm-mt-2" required oninput="previewAutoCalc()"><datalist id="list-master-blok"></datalist></div>
+                                <div><label class="prm-text-xs prm-text-muted">5. Kg TBS</label><input type="number" step="any" min="0" id="inp-kg" class="prm-input prm-mt-2" required oninput="previewAutoCalc()"></div>
+                                <div><label class="prm-text-xs prm-text-muted">6. Berondolan Kg</label><input type="number" step="any" min="0" id="inp-brd" class="prm-input prm-mt-2" value="0" required oninput="previewAutoCalc()"></div>
+                                <div><label class="prm-text-xs prm-text-muted">7. Denda (Rp)</label><input type="number" step="any" min="0" id="inp-denda" class="prm-input prm-mt-2" value="0" oninput="previewAutoCalc()"></div>
+                                <div class="prm-flex" style="align-items: flex-end;"><button type="submit" class="prm-btn prm-w-full" id="btn-simpan-rekon">Simpan</button></div>
+                            </form>
+                            <div class="prm-mt-4 prm-p-3" style="background: var(--prm-surface-elevated); border-radius: 10px; border: 1px dashed var(--prm-primary);">
+                                <div class="prm-text-xs prm-text-primary prm-mb-2"><strong>Pratinjau Otomatis:</strong></div>
+                                <div class="prm-flex prm-gap-3 prm-flex-wrap prm-text-sm"><span>Blok: <strong id="prev-status" class="prm-text-info">-</strong></span><span>Basis: <strong id="prev-basis">0 Kg</strong></span><span>Pr. Prod: <strong id="prev-prod">Rp 0</strong></span><span>Pr. Brd: <strong id="prev-brd">Rp 0</strong></span><span>Kotor: <strong id="prev-kotor">Rp 0</strong></span><span>Denda: <strong id="prev-denda" class="prm-text-danger">Rp 0</strong></span><span>Bersih: <strong id="prev-bersih" class="prm-text-primary">Rp 0</strong></span></div>
+                            </div>
+                        </div>
+                        <div class="prm-card">
+                            <h3 class="prm-text-lg" style="margin:0 0 0.25rem 0;">Copy-Paste Massal Excel (7 Kolom)</h3>
+                            <textarea id="paste-rekon-area" class="prm-input prm-mt-2" rows="5" placeholder="Tgl | NIK | Nama | Blok | Kg | Brd | Denda" style="font-family: monospace; font-size: 0.82rem; min-height: 100px;"></textarea>
+                            <div class="prm-flex prm-justify-between prm-items-center prm-mt-2 prm-flex-wrap prm-gap-2"><span class="prm-text-xs prm-text-muted">Baris yg sama otomatis tertimpa (update).</span><button type="button" class="prm-btn" onclick="prosesPasteRekon()">Proses & Simpan Massal</button></div>
+                        </div>
+                    </div>
+
+                    <div id="tab-master-blok" class="admin-tab-content prm-hidden prm-flex-col prm-gap-4">
+                        <div class="prm-card">
+                            <h3 class="prm-text-lg" style="margin:0 0 0.25rem 0;">Tambah / Update Master Blok</h3>
+                            <form id="form-master-blok" class="prm-grid prm-grid-cols-5 prm-mt-4">
+                                <div><label class="prm-text-xs prm-text-muted">Afdeling</label><select id="mb-afd" class="prm-input prm-mt-2"><option value="AFD01">AFD01</option><option value="AFD02">AFD02</option><option value="AFD03">AFD03</option><option value="AFD04">AFD04</option></select></div>
+                                <div><label class="prm-text-xs prm-text-muted">Kode Blok</label><input type="text" id="mb-blok" class="prm-input prm-mt-2" required></div>
+                                <div><label class="prm-text-xs prm-text-muted">Status Blok</label><select id="mb-status" class="prm-input prm-mt-2"><option value="TM">TM</option><option value="ATTP">ATTP</option><option value="TU">TU</option><option value="TBM">TBM</option></select></div>
+                                <div><label class="prm-text-xs prm-text-muted">Tahun Tanam</label><input type="number" id="mb-tt" class="prm-input prm-mt-2" required></div>
+                                <div><label class="prm-text-xs prm-text-muted">Basis Khusus</label><div class="prm-flex prm-gap-2 prm-mt-2"><input type="number" id="mb-basis" class="prm-input" value="0"><button type="submit" class="prm-btn"><i class="ph-bold ph-floppy-disk"></i></button></div></div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="tab-panen" class="admin-tab-content prm-hidden prm-flex-col prm-gap-4">
+                        <div class="prm-card">
+                            <h3 class="prm-text-lg" style="margin-top:0;">Status Koneksi Google Sheets</h3>
+                            <div class="prm-flex prm-gap-2 prm-flex-wrap prm-mt-4"><button type="button" class="prm-btn" onclick="jalankanCekDatabase()"><i class="ph-bold ph-shield-check"></i> Cek Struktur</button><button type="button" class="prm-btn prm-btn-secondary" onclick="jalankanHitungUlang()"><i class="ph-bold ph-arrows-clockwise"></i> Hitung Ulang Semua</button><a href="#" id="link-spreadsheet" target="_blank" class="prm-btn prm-btn-secondary"><i class="ph-bold ph-file-xls"></i> Buka File</a></div>
+                            <div id="box-cek-db" class="prm-mt-4 prm-hidden"></div>
+                        </div>
+                    </div>
+
+                    <div id="tab-unduh-excel" class="admin-tab-content prm-hidden prm-flex-col prm-gap-4">
+                        <div class="prm-card">
+                            <h3 class="prm-text-lg" style="margin-top:0;">Ekspor Matriks Tanggal Harian (Siap Tempel Excel)</h3>
+                            <p class="prm-text-sm prm-text-muted prm-mb-4">Buat tabel CSV berformat menyamping dengan kolom tanggal panen untuk mempermudah Copy-Paste ke format pengajuan Excel. Filter Afdeling & Periode mengikuti pengaturan di tab 01 Rekap.</p>
+                            <div class="prm-flex prm-gap-3 prm-items-end prm-flex-wrap">
+                                <div><label class="prm-text-xs prm-text-muted">Data Sel Matriks:</label><select id="matriks-tipe" class="prm-input prm-mt-2" style="width:200px;"><option value="kg">Kilogram TBS</option><option value="brondolan">Berondolan Kg</option><option value="total">Premi Bersih (Rp)</option><option value="denda">Potongan Denda (Rp)</option></select></div>
+                                <button type="button" class="prm-btn" onclick="unduhExcelMatriks()"><i class="ph-bold ph-download-simple"></i> Unduh Matriks CSV</button><button type="button" class="prm-btn prm-btn-secondary" onclick="unduhExcelMonev()"><i class="ph-bold ph-download-simple"></i> Unduh Tabel List Biasa</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prm-help-footer prm-mt-4"><strong>Nyamann Dibuka di HP:</strong> Gunakan browser Chrome/Safari, ketuk menu pojok kanan atas → pilih <strong>Tambahkan ke layar utama (Add to Home Screen)</strong>.</div>
+            <div class="prm-text-center prm-text-xs prm-text-muted prm-mt-2">© 2026 DIGITAL PAMUKAN • PTPN IV REGIONAL V</div>
+        </div>
+    </div>
+
+    <div id="modal-detail-pemanen" class="prm-modal-overlay prm-hidden">
+        <div class="prm-modal">
+            <div class="prm-flex prm-justify-between prm-items-center prm-mb-4">
+                <div><h3 style="margin:0;" id="mdl-det-title">Rincian Harian Pemanen</h3><div class="prm-text-xs prm-text-muted" id="mdl-det-sub">Detail Perhitungan</div></div>
+                <div class="prm-flex prm-gap-2"><button type="button" class="prm-btn prm-btn-secondary prm-btn-sm" onclick="cetakSlipPremiAdmin()"><i class="ph-bold ph-printer"></i> Cetak Slip PDF</button><button type="button" class="prm-btn prm-btn-secondary prm-btn-sm" onclick="closeModalDetail()"><i class="ph-bold ph-x"></i></button></div>
+            </div>
+            <div class="prm-table-container">
+                <table class="prm-table" id="table-modal-detail"><thead><tr><th>Tanggal</th><th>Blok</th><th>Status</th><th class="prm-text-right">Basis</th><th class="prm-text-right">Kg TBS</th><th class="prm-text-right">Brd (Kg)</th><th class="prm-text-right">Pr. Prod</th><th class="prm-text-right">Pr. Brd</th><th class="prm-text-right prm-text-danger">Denda</th><th class="prm-text-right">Bersih</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-password" class="prm-modal-overlay prm-hidden">
+        <div class="prm-modal" style="max-width:420px;">
+            <h3 class="prm-mb-4" style="margin-top:0;">Ganti Password</h3>
+            <form id="form-ganti-pw" class="prm-flex-col prm-gap-4">
+                <div><label class="prm-text-sm">Password Baru</label><input type="password" id="pw-baru" class="prm-input prm-mt-2" required></div>
+                <div><label class="prm-text-sm">Ulangi Password</label><input type="password" id="pw-ulang" class="prm-input prm-mt-2" required></div>
+                <div id="pw-error" class="prm-hidden" style="color:var(--prm-danger);font-size:0.85rem;font-weight:600;"></div>
+                <div class="prm-flex prm-gap-2 prm-mt-2"><button type="button" id="btn-pw-batal" class="prm-btn prm-btn-secondary" onclick="closeModalPassword()">Batal</button><button type="submit" id="btn-pw-simpan" class="prm-btn">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-config" class="prm-modal-overlay prm-hidden">
+        <div class="prm-modal" style="max-width:520px;">
+            <div class="prm-flex prm-justify-between prm-items-center prm-mb-4"><h3 style="margin:0;">Koneksi Database</h3><button type="button" class="prm-btn prm-btn-secondary prm-btn-sm" onclick="closeModalConfig()"><i class="ph-bold ph-x"></i></button></div>
+            <div class="prm-flex-col prm-gap-4">
+                <div><label class="prm-text-sm">URL Web App Google Apps Script</label><input type="url" id="cfg-gas-url" class="prm-input prm-mt-2" placeholder="https://script.google.com/..."></div>
+                <div id="cfg-ping-result" class="prm-text-xs prm-p-3 prm-hidden" style="border-radius:8px;"></div>
+                <div class="prm-flex prm-gap-2"><button type="button" class="prm-btn prm-btn-secondary" onclick="testLiveConnection()">Tes Koneksi</button><button type="button" class="prm-btn" onclick="saveConnectionConfig()">Simpan URL</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="prm-toast">Notifikasi</div>
+
+    <script>
+        const IS_PREVIEW = false; 
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwicmWS6_NI4f_BwXC5fIJJNSGf8YAj3qvEQ6duMNcOUsGRhX28UZqzLikERmjLjqly/exec"; 
+        let runtimeConfig = { isPreview: false, gasUrl: localStorage.getItem('prm_custom_gas_url') || GAS_URL };
+        let appState = { user: null, token: null, dashboardData: null, loginRoleMode: 'pemanen', detailView: 'cards', currentRincianAdmin: null };
+        let charts = {};
+
+        const DENDA_LABELS = { 
+            "B": "Brondolan Tidak Dikutip", 
+            "X": "Buah Mentah di TPH", 
+            "TB": "Buah Busuk Tidak Dibrondol", 
+            "R": "Pelepah Tidak Dipotong", 
+            "C": "Pelepah Kering Tidak Diturun", 
+            "M1": "Buah Mentah Diperam", 
+            "M2": "Buah Masak Tertinggal di Ancak", 
+            "M3": "Brondolan di Potongan", 
+            "E": "Egrek Tidak Ada Pengaman", 
+            "G1": "Tangkai Panjang", 
+            "G2": "Pasar Pikul / TPH Kotor", 
+            "NN": "TBS Tidak Diberi Inisial", 
+            "T": "Tangkai Tandan Tidak V-Cut", 
+            "S": "Buah Masak Tidak Dipanen" 
+        };
+
+        function translateDenda(dendaCodesObj) {
+            if (!dendaCodesObj || Object.keys(dendaCodesObj).length === 0) return "";
+            return Object.keys(dendaCodesObj).map(code => { 
+                const upper = code.toUpperCase(); 
+                const nama = DENDA_LABELS[upper] || ("Kode " + upper); 
+                return `${nama} (${dendaCodesObj[code]}x)`; 
+            }).join(", ");
+        }
+
+        function formatRp(angka) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(angka || 0); }
+        function formatNum(angka) { return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(angka || 0); }
+        
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('prm-toast'); t.innerText = msg;
+            t.className = type === 'error' ? 'error show' : 'show';
+            setTimeout(() => t.className = '', 3500);
+        }
+        function showLoader(id, show) { const el = document.getElementById(id); if(el) show ? el.classList.remove('prm-hidden') : el.classList.add('prm-hidden'); }
+        function safeSet(id, val) { const el = document.getElementById(id); if (el) el.innerHTML = val; }
+
+        function toggleTheme() {
+            const html = document.documentElement; const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.getElementById('theme-label').innerText = isDark ? 'Mode gelap' : 'Mode terang';
+        }
+
+        function checkAutoRole(val) { const v = val.toLowerCase(); if (v.includes('admin') || v.includes('krani')) { if (appState.loginRoleMode !== 'admin') selectLoginRole('admin'); } }
+
+        function selectLoginRole(role) {
+            appState.loginRoleMode = role; document.getElementById('role-btn-pemanen').classList.remove('active'); document.getElementById('role-btn-admin').classList.remove('active'); document.getElementById(`role-btn-${role}`).classList.add('active');
+            const uInput = document.getElementById('login-username'), sub = document.getElementById('login-card-sub'), title = document.getElementById('login-card-title'), pNote = document.getElementById('pemanen-pw-note');
+            if (role === 'admin') { title.innerText = "Portal Admin / Krani"; sub.innerText = "Masukkan Username Admin"; uInput.placeholder = "Ketik Username Anda"; pNote.classList.add('prm-hidden'); document.getElementById('login-password').value = ""; document.getElementById('label-login-user').innerText = "Username"; document.getElementById('login-text').innerHTML = "<i class='ph-bold ph-shield-check'></i> Masuk Dashboard"; } 
+            else { title.innerText = "Cek Premi Pemanen"; sub.innerText = "Masukkan NIK Pemanen Anda"; uInput.placeholder = "Ketik NIK Anda (contoh: 12345)"; pNote.classList.remove('prm-hidden'); document.getElementById('login-password').value = "123"; document.getElementById('label-login-user').innerText = "NIK Pemanen"; document.getElementById('login-text').innerHTML = "<i class='ph-bold ph-arrow-right'></i> Buka Hasil Panen & Premi Saya"; }
+        }
+
+        function togglePassword() { const p = document.getElementById('login-password'); p.type = p.type === 'password' ? 'text' : 'password'; }
+
+        async function apiCall(action, payload = {}) {
+            const response = await fetch(runtimeConfig.gasUrl, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: appState.token, payload }) });
+            const res = JSON.parse(await response.text()); if (!res.ok) throw new Error(res.error || 'Terjadi kesalahan server.'); return res.data;
+        }
+
+        document.getElementById('prm-form-login').addEventListener('submit', async (e) => {
+            e.preventDefault(); const u = document.getElementById('login-username').value, p = document.getElementById('login-password').value; showLoader('login-loader', true); document.getElementById('login-error').classList.add('prm-hidden');
+            try {
+                const userData = await apiCall('login', { user: u, pass: p });
+                appState.user = userData; appState.token = userData.token; document.getElementById('btn-logout-top').classList.remove('prm-hidden'); document.getElementById('view-login').classList.add('prm-hidden'); document.getElementById('view-main').classList.remove('prm-hidden');
+                if (userData.role === 'karyawan') { document.getElementById('dashboard-karyawan').classList.remove('prm-hidden'); document.getElementById('dashboard-admin').classList.add('prm-hidden'); safeSet('kar-nama-header', userData.nama); safeSet('kar-nik', userData.nik); safeSet('kar-afdeling', userData.afdeling); if (!userData.must_change_pw) loadKaryawanData(); } 
+                else { document.getElementById('dashboard-karyawan').classList.add('prm-hidden'); document.getElementById('dashboard-admin').classList.remove('prm-hidden'); setupAdminUI(userData); if (!userData.must_change_pw) loadAdminData(true); }
+                if (userData.must_change_pw) showModalPassword(true);
+            } catch (err) { const errDiv = document.getElementById('login-error'); if(errDiv) { errDiv.innerText = err.message; errDiv.classList.remove('prm-hidden'); } } finally { showLoader('login-loader', false); }
+        });
+
+        function logout() { appState.user = null; appState.token = null; appState.dashboardData = null; document.getElementById('view-main').classList.add('prm-hidden'); document.getElementById('view-login').classList.remove('prm-hidden'); document.getElementById('btn-logout-top').classList.add('prm-hidden'); document.getElementById('login-password').value = appState.loginRoleMode === 'pemanen' ? '123' : ''; showToast('Berhasil keluar'); }
+
+        async function loadKaryawanData(periodId = null) {
+            showLoader('global-loader', true);
+            try {
+                let reqPayload = {}; if (periodId) { if (periodId === 'ALL') reqPayload.allDates = true; else if (periodId.startsWith('M_')) { const p = appState.dashboardData.meta.periods.find(x => x.id === periodId); if(p) { reqPayload.tglAwal = p.start; reqPayload.tglAkhir = p.end; } } }
+                const data = await apiCall('getDashboardKaryawan', reqPayload); appState.dashboardData = data;
+                const sel = document.getElementById('kar-periode-select'); if (sel && sel.options.length === 0 && data.meta.periods) { sel.innerHTML = data.meta.periods.map(p => `<option value="${p.id}">${p.label}</option>`).join(''); }
+                safeSet('kar-premi-bersih', formatRp(data.kpi.premiBersih)); safeSet('kar-hk', formatNum(data.kpi.hk) + " Hari"); safeSet('kar-kg', formatKg(data.kpi.kgTbs) + " Kg"); safeSet('kar-brd-kg', formatNum(data.kpi.brondolanKg || 0) + " Kg"); safeSet('kar-premi-kotor', formatRp(data.kpi.premiKotor)); safeSet('kar-denda', formatRp(data.kpi.denda));
+                const tbody = document.querySelector('#table-rincian-karyawan tbody'); const cardsContainer = document.getElementById('kar-detail-cards');
+                if (tbody) tbody.innerHTML = ''; if (cardsContainer) cardsContainer.innerHTML = '';
+                if (data.harian && data.harian.length > 0) {
+                    data.harian.forEach(r => {
+                        const alasanDenda = translateDenda(r.denda_codes); const ketDendaHtml = r.denda > 0 ? `<br><span class="prm-text-xs prm-text-danger">${alasanDenda || r.denda_ket || 'Potongan Denda'}</span>` : '';
+                        if (tbody) tbody.innerHTML += `<tr><td>${r.tgl}</td><td>${r.blok}</td><td>${r.status}</td><td class="prm-text-right">${formatNum(r.basis_kg)}</td><td class="prm-text-right">${formatKg(r.kg)}</td><td class="prm-text-right">${formatNum(r.brondolan)}</td><td class="prm-text-right">${formatRp(r.p_prod)}</td><td class="prm-text-right">${formatRp(r.p_brd)}</td><td class="prm-text-right prm-text-danger">${formatRp(r.denda)}${ketDendaHtml}</td><td class="prm-text-right prm-text-primary" style="font-weight:800;">${formatRp(r.total)}</td></tr>`;
+                        if (cardsContainer) cardsContainer.innerHTML += `<div class="prm-day-card"><div class="prm-day-card-top"><strong>${r.tgl}</strong> <span class="badge badge-success">Blok ${r.blok}</span></div><div class="prm-day-card-grid"><div class="prm-day-stat"><div class="prm-day-stat-label">Kg TBS</div><div class="prm-day-stat-val prm-text-primary">${formatKg(r.kg)} Kg</div></div><div class="prm-day-stat"><div class="prm-day-stat-label">Potongan Denda <span style="font-weight:normal;">${alasanDenda ? '<br>'+alasanDenda : ''}</span></div><div class="prm-day-stat-val prm-text-danger">${formatRp(r.denda)}</div></div></div><div class="prm-flex prm-justify-between prm-items-center" style="background: var(--prm-primary-soft); padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid var(--prm-primary);"><span class="prm-text-xs" style="font-weight:700;">PREMI BERSIH</span><strong class="prm-text-primary" style="font-size:1.1rem;">${formatRp(r.total)}</strong></div></div>`;
+                    });
+                }
+                renderChartKaryawan(data.grafik);
+            } catch (err) { showToast('Gagal memuat: ' + err.message, 'error'); } finally { showLoader('global-loader', false); }
+        }
+
+        function switchKaryawanDetailView(view) {
+            appState.detailView = view;
+            document.getElementById('btn-view-cards').classList.remove('active'); document.getElementById('btn-view-table').classList.remove('active');
+            document.getElementById(`btn-view-${view}`).classList.add('active');
+            if (view === 'cards') { document.getElementById('kar-detail-cards').classList.remove('prm-hidden'); document.getElementById('kar-detail-table').classList.add('prm-hidden'); } 
+            else { document.getElementById('kar-detail-cards').classList.add('prm-hidden'); document.getElementById('kar-detail-table').classList.remove('prm-hidden'); }
+        }
+
+        function renderChartKaryawan(data) {
+            const ctx = document.getElementById('chartKaryawan'); if (!ctx || !data) return;
+            if (charts.kar) charts.kar.destroy();
+            charts.kar = new Chart(ctx, { type: 'line', data: { labels: data.labels, datasets: [{ label: 'Premi Bersih (Rp)', data: data.dataPremi, borderColor: '#34d374', backgroundColor: 'rgba(52, 211, 116, 0.2)', borderWidth: 3, fill: true, tension: 0.3, pointBackgroundColor: '#112618', pointBorderColor: '#34d374', pointBorderWidth: 2, pointRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatRp(c.raw) } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(134, 239, 172, 0.1)' }, ticks: { callback: (v) => 'Rp ' + (v / 1000) + 'k' } }, x: { grid: { display: false } } } } });
+        }
+
+        function cetakSlipPremi() { if (!appState.dashboardData || !appState.dashboardData.harian) return; buatTemplatePrint(appState.user.nama, appState.user.nik, appState.user.afdeling, appState.dashboardData.meta.appliedStart, appState.dashboardData.meta.appliedEnd, appState.dashboardData.kpi, appState.dashboardData.harian); }
+        function cetakSlipPremiAdmin() { if (!appState.currentRincianAdmin) return; const p = appState.currentRincianAdmin; const kpi = { hk: p.hk, tandan: p.tandan, kgTbs: p.kg, brondolanKg: p.brd, premiKotor: p.pKotor, denda: p.denda, premiBersih: p.pBersih, dendaRingkasan: p.dendaKet }; buatTemplatePrint(p.nama, p.nik, p.afd, appState.dashboardData.meta.appliedStart, appState.dashboardData.meta.appliedEnd, kpi, p.rincian); }
+
+        /* ===== v2.4: Slip PDF untuk HP (tanpa pop-up & tanpa dialog cetak) ===== */
+        function formatKg(angka) { return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(angka) || 0); }
+        function isMobileDevice() {
+            return /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        }
+
+        async function buatSlipPDFBytes(nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak) {
+            const { PDFDocument, StandardFonts, rgb } = PDFLib;
+            const pdf = await PDFDocument.create();
+            pdf.setTitle('Slip Premi - ' + nama);
+            const F = await pdf.embedFont(StandardFonts.Helvetica), B = await pdf.embedFont(StandardFonts.HelveticaBold), I = await pdf.embedFont(StandardFonts.HelveticaOblique);
+            const PW = 841.89, PH = 595.28, M = 28, CW = PW - 2 * M, FOOT = 16;
+            const black = rgb(0, 0, 0), grey = rgb(0.953, 0.953, 0.953);
+            const clean = s => String(s == null ? '' : s).replace(/[  ]/g, ' ').replace(/[^\x20-\x7E\xA1-\xFF]/g, '?');
+            const rp = v => clean(formatRp(v)), num = v => clean(formatNum(v));
+            const num2 = v => clean(new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v) || 0));
+            const tw = (t, f, s) => f.widthOfTextAtSize(t, s);
+            let page, y;
+            const txt = (t, x, yTop, s, f, align) => {
+                t = clean(t); let px = x;
+                if (align === 'right') px = x - tw(t, f, s); else if (align === 'center') px = x - tw(t, f, s) / 2;
+                page.drawText(t, { x: px, y: PH - yTop, size: s, font: f, color: black });
+            };
+            const box = (x, yTop, w, h, fill, bw) => page.drawRectangle({ x: x, y: PH - yTop - h, width: w, height: h, borderColor: black, borderWidth: bw || 0.5, color: fill });
+            const hline = (yTop, w) => page.drawLine({ start: { x: M, y: PH - yTop }, end: { x: PW - M, y: PH - yTop }, thickness: w, color: black });
+            const wrap = (t, f, s, maxW) => {
+                const words = clean(t).split(' '), lines = []; let cur = '';
+                words.forEach(w => { const test = cur ? cur + ' ' + w : w; if (tw(test, f, s) <= maxW || !cur) cur = test; else { lines.push(cur); cur = w; } });
+                if (cur) lines.push(cur); return lines;
+            };
+
+            const heads = ['Tanggal', 'Blok', 'Status', 'Basis', 'Tandan', 'Kg TBS', 'RBT', 'Brd (Kg)', 'Kotor(Rp)', 'Denda(Rp)', 'Bersih(Rp)'];
+            const weights = [54, 32, 34, 34, 36, 48, 34, 40, 64, 330, 68], wsum = weights.reduce((a, b) => a + b, 0);
+            const cw = weights.map(w => w * CW / wsum), cx = []; cw.reduce((acc, w, i) => { cx[i] = acc; return acc + w; }, M);
+            const align = ['left', 'center', 'center', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'right'];
+            const KOP = 76;
+
+            // ---- Siapkan data baris + totalnya ----
+            const totalRbt = kpi.tandan > 0 ? formatKg(kpi.kgTbs / kpi.tandan) : '0,00';
+            const sumLines = [
+                'Total Hari Kerja: ' + (kpi.hk || kpi.hkTotal) + ' Hari',
+                'Total Tandan: ' + num(kpi.tandan) + ' Jjg',
+                'Total Kg TBS: ' + num2(kpi.kgTbs) + ' Kg (Rata-rata RBT: ' + totalRbt + ' Kg)',
+                'Total Berondolan: ' + num(kpi.brondolanKg) + ' Kg',
+                'Total Premi Kotor: ' + rp(kpi.premiKotor),
+                'Total Potongan Denda: ' + rp(kpi.denda)
+            ];
+            const rowsData = harian.map(r => {
+                const alasan = (r.denda > 0) ? clean(translateDenda(r.denda_codes) || r.denda_ket || 'Potongan Denda') : '';
+                const rbt = r.tandan > 0 ? formatKg(r.kg / r.tandan) : '0,00';
+                return { alasan: alasan, vals: [r.tgl, r.blok, r.status, num(r.basis_kg), num(r.tandan), num2(r.kg), clean(String(rbt)), num(r.brondolan), rp(r.kotor), rp(r.denda), rp(r.total)] };
+            });
+
+            // ---- Skala otomatis: perkecil bila perlu agar muat 1 halaman (minimal 0.7) ----
+            const lay = s => ({ s: s, fs: 8 * s, rh: 13.5 * s, rfs: 6.5 * s, rlh: 7.2 * s, head: 17 * s, ss: Math.max(s, 0.85) });
+            const measure = L => {
+                let h = 0;
+                rowsData.forEach(d => { d.lines = d.alasan ? wrap(d.alasan, I, L.rfs, cw[9] - 8) : []; h += L.rh + d.lines.length * L.rlh + (d.lines.length ? 2.5 * L.s : 0); });
+                const sumH = 6 + 16 * L.ss + 12 * L.ss + sumLines.length * 11 * L.ss + 4 + 20 * L.ss;
+                return M + KOP + L.head + h + sumH;
+            };
+            let L = lay(1), fitted = false;
+            for (let s = 1; s >= 0.699; s -= 0.05) { L = lay(s); if (measure(L) <= PH - M - 4) { fitted = true; break; } }
+            if (!fitted) { L = lay(0.9); measure(L); }   // terlalu panjang: tetap terbaca, lanjut ke halaman berikutnya
+
+            const cellText = (t, i, top, size, f) => {
+                const pad = 4 * L.s;
+                if (align[i] === 'left') txt(t, cx[i] + pad, top, size, f, 'left');
+                else if (align[i] === 'center') txt(t, cx[i] + cw[i] / 2, top, size, f, 'center');
+                else txt(t, cx[i] + cw[i] - pad, top, size, f, 'right');
+            };
+            const drawHead = () => {
+                heads.forEach((t, i) => { box(cx[i], y, cw[i], L.head, grey); txt(t, cx[i] + cw[i] / 2, y + L.head * 0.68, L.fs, B, 'center'); });
+                y += L.head;
+            };
+            const newPage = () => { page = pdf.addPage([PW, PH]); y = M; };
+
+            // ---- Halaman 1: kop ----
+            newPage();
+            txt('SLIP PREMI PANEN DIGITAL', PW / 2, y + 10, 14, B, 'center');
+            txt('PTPN IV REGIONAL V KEBUN PAMUKAN', PW / 2, y + 24, 11, B, 'center');
+            txt('Periode: ' + tglAwal + ' s/d ' + tglAkhir, PW / 2, y + 36, 9, F, 'center');
+            txt('Dicetak pada:', PW - M, y + 6, 7, F, 'right');
+            txt(tglCetak, PW - M, y + 15, 7.5, B, 'right');
+            hline(y + 44, 1.5);
+            txt('Nama: ', M, y + 58, 9, F, 'left'); txt(nama, M + tw('Nama: ', F, 9), y + 58, 9, B, 'left');
+            txt('NIK: ', M, y + 69, 9, F, 'left'); txt(nik, M + tw('NIK: ', F, 9), y + 69, 9, B, 'left');
+            const afdTxt = clean(afd);
+            txt(afdTxt, PW - M, y + 58, 9, B, 'right'); txt('Afdeling: ', PW - M - tw(afdTxt, B, 9), y + 58, 9, F, 'right');
+            y += KOP;
+            drawHead();
+
+            // ---- Baris data ----
+            rowsData.forEach(d => {
+                const h = L.rh + d.lines.length * L.rlh + (d.lines.length ? 2.5 * L.s : 0);
+                if (y + h > PH - M - FOOT) { newPage(); drawHead(); }
+                d.vals.forEach((v, i) => { box(cx[i], y, cw[i], h); cellText(v, i, y + L.rh * 0.71, L.fs, i === 10 ? B : F); });
+                d.lines.forEach((ln, k) => txt(ln, cx[9] + cw[9] - 4 * L.s, y + L.rh + 3.2 * L.s + k * L.rlh, L.rfs, I, 'right'));
+                y += h;
+            });
+
+            // ---- Rekapitulasi ----
+            const sumH = 6 + 16 * L.ss + 12 * L.ss + sumLines.length * 11 * L.ss + 4 + 20 * L.ss;
+            if (y + sumH > PH - M - FOOT + FOOT - 4) newPage(); else y += 6;
+            hline(y + 4, 1.5); y += 16 * L.ss;
+            txt('TOTAL REKAPITULASI:', M, y, 8.5 * L.ss, B, 'left'); y += 12 * L.ss;
+            sumLines.forEach(l => { txt(l, M, y, 8.5 * L.ss, F, 'left'); y += 11 * L.ss; });
+            y += 4;
+            const totalTxt = 'TOTAL PREMI BERSIH: ' + rp(kpi.premiBersih), tfs = 11 * L.ss, bw = tw(clean(totalTxt), B, tfs) + 16;
+            box(M, y, bw, 20 * L.ss, grey, 1.5); txt(totalTxt, M + 8, y + 14 * L.ss, tfs, B, 'left');
+
+            // ---- Nomor halaman ----
+            const pages = pdf.getPages();
+            if (pages.length > 1) pages.forEach((p, i) => { page = p; txt('Hal ' + (i + 1) + '/' + pages.length, PW - M, PH - 14, 7, F, 'right'); });
+            return await pdf.save();
+        }
+
+        async function unduhSlipPDF(nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak) {
+            const bytes = await buatSlipPDFBytes(nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak);
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob), link = document.createElement('a');
+            link.href = url; link.download = ('Slip Premi - ' + nama + '.pdf').replace(/[\\\/:*?"<>|]/g, '_');
+            link.style.display = 'none'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+        }
+
+        /* ===== v2.4: menu cetak di HP (Cetak/Pilih Printer, Simpan PDF, Bagikan) ===== */
+        function tutupPilihanCetak() { var e = document.getElementById('prm-pilih-cetak'); if (e) e.remove(); }
+
+        function cetakDiHalaman(html, nama) {
+            ['prm-print-root', 'prm-print-style'].forEach(function (id) { var o = document.getElementById(id); if (o) o.remove(); });
+            var i = html.indexOf('<body>'), j = html.indexOf('<script>');
+            var isi = html.substring(i + 6, j > i ? j : html.indexOf('</body>'));
+            var m = html.match(/<style>([\s\S]*?)<\/style>/), css = (m ? m[1] : '').replace(/@page\s*\{[^}]*\}/, '');
+            var st = document.createElement('style'); st.id = 'prm-print-style';
+            st.textContent = '@page { size: A4 landscape; margin: 10mm; } #prm-print-root { display: none; } @media print { html, body { overflow: visible !important; height: auto !important; width: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; } body > *:not(#prm-print-root) { display: none !important; } #prm-print-root { display: block !important; } ' + css + ' #prm-print-root .slip-header { margin-bottom: 6px !important; padding-bottom: 5px !important; } #prm-print-root .slip-info { margin-top: 6px !important; } #prm-print-root .slip-table { margin-top: 5px !important; } #prm-print-root .slip-table th, #prm-print-root .slip-table td { padding: 2px 4px !important; font-size: 9px !important; line-height: 1.2 !important; } #prm-print-root .slip-denda { font-size: 7px !important; margin-top: 0 !important; line-height: 1.15 !important; } #prm-print-root .slip-table tr { break-inside: avoid; } #prm-print-root .slip-table thead { display: table-header-group; } #prm-print-root .slip-summary { margin-top: 6px !important; padding-top: 4px !important; font-size: 9px !important; break-inside: avoid; } #prm-print-root .slip-total-box { font-size: 11px !important; margin-top: 4px !important; } }';
+            document.head.appendChild(st);
+            var root = document.createElement('div'); root.id = 'prm-print-root'; root.innerHTML = isi; document.body.appendChild(root);
+            var judulLama = document.title; document.title = 'Slip Premi - ' + nama;
+            var bersih = function () {
+                window.removeEventListener('afterprint', bersih);
+                document.title = judulLama;
+                var r = document.getElementById('prm-print-root'); if (r) r.remove();
+                var s = document.getElementById('prm-print-style'); if (s) s.remove();
+            };
+            window.addEventListener('afterprint', bersih);
+            setTimeout(bersih, 600000);
+            void root.offsetHeight;
+            window.print();
+        }
+
+        async function bagikanSlipPDF(nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak) {
+            var bytes = await buatSlipPDFBytes(nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak);
+            var nm = ('Slip Premi - ' + nama + '.pdf').replace(/[\\\/:*?"<>|]/g, '_');
+            var file = new File([bytes], nm, { type: 'application/pdf' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try { await navigator.share({ files: [file], title: 'Slip Premi - ' + nama }); }
+                catch (e) { if (e && e.name === 'AbortError') return; throw e; }
+            } else {
+                await unduhSlipPDF(nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak);
+                showToast('Fitur bagikan tidak tersedia, PDF disimpan di folder Unduhan.');
+            }
+        }
+
+        function pilihCetakHP(html, nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak) {
+            tutupPilihanCetak();
+            var args = [nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak];
+            var ov = document.createElement('div'); ov.id = 'prm-pilih-cetak';
+            ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+            ov.addEventListener('click', function (e) { if (e.target === ov) tutupPilihanCetak(); });
+            var card = document.createElement('div');
+            card.style.cssText = 'background:var(--prm-surface,#fff);color:var(--prm-text,#000);border:1px solid var(--prm-border-bright,#ccc);border-radius:14px;padding:16px;width:100%;max-width:360px;font-family:Inter,sans-serif;box-sizing:border-box;';
+            var jd = document.createElement('div'); jd.style.cssText = 'font-weight:800;font-size:0.95rem;margin-bottom:2px;'; jd.textContent = 'Slip Premi - ' + nama; card.appendChild(jd);
+            var sb = document.createElement('div'); sb.style.cssText = 'font-size:0.78rem;opacity:0.8;margin-bottom:12px;'; sb.textContent = 'Pilih cara mencetak slip'; card.appendChild(sb);
+            var tombol = function (judul, ket, utama, fn) {
+                var b = document.createElement('button'); b.type = 'button';
+                b.style.cssText = 'display:block;width:100%;text-align:left;margin-bottom:8px;padding:10px 12px;border-radius:10px;cursor:pointer;font-family:inherit;border:1px solid var(--prm-border-bright,#ccc);' + (utama ? 'background:var(--prm-primary,#16a34a);color:var(--prm-primary-text,#fff);' : 'background:var(--prm-surface-elevated,#f3f3f3);color:var(--prm-text,#000);');
+                b.innerHTML = '<div style="font-weight:700;font-size:0.88rem;"></div><div style="font-size:0.72rem;opacity:0.85;margin-top:2px;"></div>';
+                b.children[0].textContent = judul; b.children[1].textContent = ket; b.addEventListener('click', fn); card.appendChild(b);
+            };
+            tombol('Cetak / Pilih Printer', 'Buka dialog cetak: pilih printer atau "Simpan sebagai PDF"', true, function () {
+                tutupPilihanCetak();
+                try { cetakDiHalaman(html, nama); } catch (e) { showToast('Gagal membuka dialog cetak: ' + e.message, 'error'); }
+            });
+            tombol('Simpan PDF', 'Simpan file PDF ke folder Unduhan', false, function () {
+                tutupPilihanCetak();
+                if (!window.PDFLib) { showToast('Pustaka PDF belum termuat. Periksa koneksi internet.', 'error'); return; }
+                showToast('Membuat slip PDF...');
+                unduhSlipPDF.apply(null, args).then(function () { showToast('Slip PDF tersimpan di folder Unduhan / Download.'); }).catch(function (e) { showToast('Gagal membuat PDF: ' + e.message, 'error'); });
+            });
+            tombol('Bagikan', 'Kirim PDF lewat WhatsApp, Drive, atau aplikasi lain', false, function () {
+                tutupPilihanCetak();
+                if (!window.PDFLib) { showToast('Pustaka PDF belum termuat. Periksa koneksi internet.', 'error'); return; }
+                bagikanSlipPDF.apply(null, args).catch(function (e) { showToast('Gagal membagikan: ' + e.message, 'error'); });
+            });
+            var bt = document.createElement('button'); bt.type = 'button'; bt.textContent = 'Batal';
+            bt.style.cssText = 'display:block;width:100%;padding:8px;border:none;background:transparent;color:var(--prm-text-sub,#555);cursor:pointer;font-family:inherit;font-size:0.82rem;';
+            bt.addEventListener('click', tutupPilihanCetak); card.appendChild(bt);
+            ov.appendChild(card); document.body.appendChild(ov);
+        }
+
+        function buatTemplatePrint() {
+            try {
+                if (isMobileDevice()) showToast('Menyiapkan slip... (v2.4)');
+                return buatTemplatePrintInti.apply(null, arguments);
+            } catch (e) { alert('Gagal menyiapkan slip (v2.4): ' + (e && e.message ? e.message : e)); }
+        }
+
+        function buatTemplatePrintInti(nama, nik, afd, tglAwal, tglAkhir, kpi, harian) {
+            const now = new Date();
+            const hariIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const bulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const tglCetak = hariIndo[now.getDay()] + ', ' + now.getDate() + ' ' + bulanIndo[now.getMonth()] + ' ' + now.getFullYear() + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+
+            let html = `
+            <!DOCTYPE html>
+            <html><head><title>Slip Premi - ${nama}</title>
+            <style>
+                @page { size: landscape; margin: 10mm; }
+                body { font-family: Arial, sans-serif; font-size: 10px; color: #000; background: #fff; margin: 0; padding: 0; }
+                .slip-container { width: 100%; }
+                .slip-header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 8px; position: relative; }
+                .slip-header h2 { margin: 0; font-size: 14px; }
+                .slip-header strong { font-size: 11px; }
+                .slip-date { position: absolute; top: 0; right: 0; font-size: 8px; color: #444; text-align: right; }
+                .slip-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 10px; }
+                .slip-table { width: 100%; max-width: 100%; border-collapse: collapse; margin-top: 8px; }
+                .slip-table th, .slip-table td { border: 1px solid #000; padding: 4px; text-align: right; word-break: normal; color: #000; font-size: 10px; }
+                .slip-table th { text-align: center; font-weight: bold; background-color: #f3f3f3 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+                .text-left { text-align: left !important; } .text-center { text-align: center !important; }
+                .slip-denda { display: block; font-size: 8px; color: #333; margin-top: 2px; font-style: italic; text-align: right; }
+                .slip-summary { margin-top: 12px; border-top: 2px solid #000; padding-top: 8px; font-size: 10px; }
+                .slip-total-box { font-size: 12px; display: inline-block; margin-top: 6px; border: 2px solid #000; padding: 4px 8px; font-weight: bold; background: #f3f3f3 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+            </style>
+            </head><body>
+            <div class="slip-container">
+                <div class="slip-header">
+                    <div class="slip-date">Dicetak pada:<br><strong>${tglCetak}</strong></div>
+                    <h2>SLIP PREMI PANEN DIGITAL</h2><strong>PTPN IV REGIONAL V KEBUN PAMUKAN</strong><br>Periode: ${tglAwal} s/d ${tglAkhir}
+                </div>
+                <div class="slip-info"><div>Nama: <strong>${nama}</strong><br>NIK: <strong>${nik}</strong></div><div>Afdeling: <strong>${afd}</strong></div></div>
+                <table class="slip-table"><thead><tr><th class="text-left">Tanggal</th><th>Blok</th><th>Status</th><th>Basis</th><th>Tandan</th><th>Kg TBS</th><th>RBT</th><th>Brd (Kg)</th><th>Kotor(Rp)</th><th>Denda(Rp)</th><th>Bersih(Rp)</th></tr></thead><tbody>`;
+            
+            harian.forEach(r => { 
+                const alasanDenda = translateDenda(r.denda_codes); 
+                const ketDendaHtml = r.denda > 0 ? `<span class="slip-denda">${alasanDenda || r.denda_ket || 'Potongan Denda'}</span>` : ''; 
+                const rbt = r.tandan > 0 ? formatKg(r.kg / r.tandan) : '0,00';
+                html += `<tr><td class="text-left">${r.tgl}</td><td class="text-center">${r.blok}</td><td class="text-center">${r.status}</td><td>${formatNum(r.basis_kg)}</td><td>${formatNum(r.tandan)}</td><td>${formatKg(r.kg)}</td><td>${rbt}</td><td>${formatNum(r.brondolan)}</td><td>${formatRp(r.kotor)}</td><td>${formatRp(r.denda)}${ketDendaHtml}</td><td><strong>${formatRp(r.total)}</strong></td></tr>`; 
+            });
+            
+            const totalRbt = kpi.tandan > 0 ? formatKg(kpi.kgTbs / kpi.tandan) : '0,00';
+            html += `</tbody></table>
+                <div class="slip-summary"><strong>TOTAL REKAPITULASI:</strong><br>Total Hari Kerja: ${kpi.hk || kpi.hkTotal} Hari<br>Total Tandan: ${formatNum(kpi.tandan)} Jjg<br>Total Kg TBS: ${formatKg(kpi.kgTbs)} Kg (Rata-rata RBT: ${totalRbt} Kg)<br>Total Berondolan: ${formatNum(kpi.brondolanKg)} Kg<br>Total Premi Kotor: ${formatRp(kpi.premiKotor)}<br>Total Potongan Denda: ${formatRp(kpi.denda)}<br><div class="slip-total-box">TOTAL PREMI BERSIH: ${formatRp(kpi.premiBersih)}</div></div>
+            </div>
+            <scr`+`ipt>
+                window.onload = function() {
+                    setTimeout(function() { window.print(); }, 500);
+                };
+            </scr`+`ipt>
+            </body></html>`;
+            
+            if (isMobileDevice()) { pilihCetakHP(html, nama, nik, afd, tglAwal, tglAkhir, kpi, harian, tglCetak); return; }
+            let printWindow = window.open('', '_blank');
+            if (!printWindow || printWindow.closed || typeof printWindow.closed == 'undefined') {
+                alert("Pemberitahuan: Browser Anda memblokir tab slip otomatis. Izinkan pop-up / tab baru untuk mencetak.");
+                return;
+            }
+            
+            if (printWindow) {
+                printWindow.document.open();
+                printWindow.document.write(html);
+                printWindow.document.close();
+            }
+        }
+
+        function setupAdminUI(user) {
+            const isKrani = user.role === 'krani'; document.getElementById('mb-afd').disabled = isKrani;
+            if (isKrani) { document.getElementById('filter-afdeling').value = user.afdeling; document.getElementById('filter-afdeling').disabled = true; document.getElementById('mb-afd').value = user.afdeling; }
+            switchAdminTab('tab-monev');
+        }
+
+        function switchAdminTab(tabId) {
+            document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('prm-hidden'));
+            const btn = Array.from(document.querySelectorAll('.admin-tab')).find(b => b.getAttribute('onclick').includes(tabId));
+            if (btn) btn.classList.add('active'); document.getElementById(tabId).classList.remove('prm-hidden');
+        }
+
+        async function loadAdminData(autoDate = false) {
+            showLoader('global-loader', true);
+            const afd = document.getElementById('filter-afdeling') ? document.getElementById('filter-afdeling').value : 'SEMUA';
+            const tglAwal = document.getElementById('filter-tgl-awal') ? document.getElementById('filter-tgl-awal').value : '';
+            const tglAkhir = document.getElementById('filter-tgl-akhir') ? document.getElementById('filter-tgl-akhir').value : '';
+            try {
+                const data = await apiCall('getDashboardAdmin', { afd, tglAwal, tglAkhir, autoDate }); appState.dashboardData = data;
+                if (data.meta && document.getElementById('filter-tgl-awal')) { document.getElementById('filter-tgl-awal').value = data.meta.appliedStart; document.getElementById('filter-tgl-akhir').value = data.meta.appliedEnd; }
+                if (document.getElementById('adm-kpi-kg')) safeSet('adm-kpi-kg', formatKg(data.kpi.kgTbs) + " Kg");
+                if (document.getElementById('adm-kpi-brd-kg')) safeSet('adm-kpi-brd-kg', formatNum(data.kpi.brondolanKg) + " Kg");
+                if (document.getElementById('adm-kpi-premi')) safeSet('adm-kpi-premi', formatRp(data.kpi.premiKotor));
+                if (document.getElementById('adm-kpi-denda')) safeSet('adm-kpi-denda', formatRp(data.kpi.denda));
+                if (document.getElementById('adm-kpi-bersih')) safeSet('adm-kpi-bersih', formatRp(data.kpi.premiBersih));
+
+                const tbAfd = document.querySelector('#table-rekap-afd tbody'); const tfAfd = document.querySelector('#table-rekap-afd tfoot');
+                if (tbAfd && data.rekapAfdeling) {
+                    tbAfd.innerHTML = ''; let sAktif=0, sHk=0, sTnd=0, sKg=0, sBrd=0, sKot=0, sDen=0, sBer=0;
+                    data.rekapAfdeling.forEach(r => { sAktif+=r.pemanenAktif; sHk+=r.hk; sTnd+=r.tandan; sKg+=r.kg; sBrd+=r.brd; sKot+=r.pKotor; sDen+=r.denda; sBer+=r.pBersih; tbAfd.innerHTML += `<tr><td><span class="badge badge-success">${r.afd}</span></td><td class="prm-text-right">${formatNum(r.pemanenAktif)}</td><td class="prm-text-right">${formatNum(r.hk)}</td><td class="prm-text-right">${formatNum(r.tandan)}</td><td class="prm-text-right">${formatKg(r.kg)}</td><td class="prm-text-right">${r.tandan>0?formatKg(r.kg/r.tandan) : '0,00'}</td><td class="prm-text-right">${r.kgPerHk}</td><td class="prm-text-right">${formatNum(r.brd)}</td><td class="prm-text-right">${formatRp(r.pKotor)}</td><td class="prm-text-right prm-text-danger">${formatRp(r.denda)}</td><td class="prm-text-right prm-text-primary" style="font-weight:700;">${formatRp(r.pBersih)}</td><td class="prm-text-right">${r.pctKg.toFixed(1)}%</td></tr>`; });
+                    tfAfd.innerHTML = `<tr><td>JUMLAH</td><td class="prm-text-right">${formatNum(sAktif)}</td><td class="prm-text-right">${formatNum(sHk)}</td><td class="prm-text-right">${formatNum(sTnd)}</td><td class="prm-text-right">${formatKg(sKg)}</td><td class="prm-text-right">${sTnd>0?formatKg(sKg/sTnd) : '0,00'}</td><td class="prm-text-right">${sHk>0?Math.round(sKg/sHk):'0'}</td><td class="prm-text-right">${formatNum(sBrd)}</td><td class="prm-text-right">${formatRp(sKot)}</td><td class="prm-text-right prm-text-danger">${formatRp(sDen)}</td><td class="prm-text-right prm-text-primary" style="font-weight:700;">${formatRp(sBer)}</td><td class="prm-text-right">100%</td></tr>`;
+                }
+
+                const tbody = document.querySelector('#table-admin-pemanen tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    (data.pemanen || []).forEach((r, idx) => {
+                        const alasanDenda = translateDenda(r.dendaCodes || {}); const dendaTeks = r.denda > 0 ? `<br><span class="prm-text-xs prm-text-danger">${alasanDenda || r.dendaKet}</span>` : '';
+                        tbody.innerHTML += `<tr><td>${idx + 1}</td><td><strong>${r.nik}</strong></td><td>${r.nama}</td><td><span class="badge badge-success">${r.afd}</span></td><td class="prm-text-right">${r.hk}</td><td class="prm-text-right">${formatKg(r.kg)}</td><td class="prm-text-right">${formatNum(r.brd)}</td><td class="prm-text-right">${formatRp(r.pProd || r.pKotor)}</td><td class="prm-text-right">${formatRp(r.pBrd)}</td><td class="prm-text-right">${formatRp(r.pKotor)}</td><td class="prm-text-right prm-text-danger">${formatRp(r.denda)}${dendaTeks}</td><td class="prm-text-right prm-text-primary" style="font-weight:800;">${formatRp(r.pBersih)}</td><td class="prm-text-center"><button class="prm-btn prm-btn-secondary prm-btn-sm" onclick="lihatRincianPemanen('${r.nik}')">Rincian</button></td></tr>`;
+                    });
+                }
+                const dl = document.getElementById('list-master-blok'); if (dl && data.masterBlok) { dl.innerHTML = data.masterBlok.map(b => `<option value="${b.blok}">${b.afdeling} - ${b.status_blok}</option>`).join(''); }
+                if (data.spreadsheet_url) document.getElementById('link-spreadsheet').href = data.spreadsheet_url;
+            } catch (err) { showToast('Gagal memuat: ' + err.message, 'error'); } finally { showLoader('global-loader', false); }
+        }
+
+        function resetAdminFilter() { document.getElementById('filter-tgl-awal').value = ''; document.getElementById('filter-tgl-akhir').value = ''; loadAdminData(false); }
+        function filterTabelPemanen() { const q = document.getElementById('search-pemanen').value.toLowerCase(), trs = document.querySelectorAll('#table-admin-pemanen tbody tr'); trs.forEach(tr => { const n = tr.children[1].innerText.toLowerCase(), m = tr.children[2].innerText.toLowerCase(); tr.style.display = (n.includes(q) || m.includes(q)) ? '' : 'none'; }); }
+
+        async function kunciPeriodeHP() {
+            const tglAwal = document.getElementById('filter-tgl-awal').value, tglAkhir = document.getElementById('filter-tgl-akhir').value;
+            if(!tglAwal || !tglAkhir) { showToast("Pilih tanggal awal & akhir dulu", "error"); return; }
+            if(!confirm(`Kunci default HP Pemanen ke periode ${tglAwal} s/d ${tglAkhir}?`)) return;
+            try { showLoader('global-loader', true); await apiCall('setPeriodeAktif', { tglAwal: tglAwal, tglAkhir: tglAkhir }); showToast("Periode berhasil dikunci!"); } catch(e) { showToast(e.message, 'error'); } finally { showLoader('global-loader', false); }
+        }
+
+        function unduhExcelMatriks() {
+            if (!appState.dashboardData || !appState.dashboardData.pemanen || appState.dashboardData.pemanen.length === 0) { showToast('Tidak ada data.', 'error'); return; }
+            const tipe = document.getElementById('matriks-tipe').value; const dateSet = new Set();
+            appState.dashboardData.pemanen.forEach(p => p.rincian.forEach(r => dateSet.add(r.tgl))); const dateArr = Array.from(dateSet).sort();
+            let csv = `NIK;NAMA;AFDELING;${dateArr.join(";")};TOTAL\n`;
+            appState.dashboardData.pemanen.forEach(p => { let row = `${p.nik};${p.nama};${p.afd}`; let totalRow = 0; dateArr.forEach(d => { const r = p.rincian.find(x => x.tgl === d); let val = 0; if (r) { if (tipe === 'kg') val = r.kg; else if (tipe === 'brondolan') val = r.brondolan; else if (tipe === 'total') val = r.total; else if (tipe === 'denda') val = r.denda; } totalRow += val; row += `;${val}`; }); row += `;${totalRow}\n`; csv += row; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Matriks_${tipe}_${new Date().getTime()}.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); showToast("Matriks CSV diunduh!"); }
+        }
+
+        function unduhExcelMonev() {
+            if (!appState.dashboardData || !appState.dashboardData.pemanen || appState.dashboardData.pemanen.length === 0) { showToast('Tidak ada data untuk diunduh.', 'error'); return; }
+            let csvContent = "TANGGAL PANEN;NIK PEMANEN;NAMA PEMANEN;AFDELING;BLOK;STATUS BLOK;TAHUN TANAM;KILOGRAM TBS;BERONDOLAN (KG);PREMI PRODUKSI;PREMI BERONDOLAN;PREMI KOTOR;POTONGAN DENDA;PREMI BERSIH FINAL\n";
+            appState.dashboardData.pemanen.forEach(p => { (p.rincian || []).forEach(r => { csvContent += `${r.tgl};${p.nik};${p.nama};${p.afd};${r.blok};${r.status};${r.tahun_tanam};${r.kg};${r.brondolan};${r.p_prod};${r.p_brd};${r.kotor};${r.denda};${r.total}\n`; }); });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Rekap_Premi_Harian_${new Date().getTime()}.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); showToast("File Excel (CSV) berhasil diunduh!"); }
+        }
+
+        function lihatRincianPemanen(nik) {
+            if (!appState.dashboardData || !appState.dashboardData.pemanen) return;
+            const p = appState.dashboardData.pemanen.find(x => String(x.nik) === String(nik));
+            if (!p) return;
+            appState.currentRincianAdmin = p; safeSet('mdl-det-title', `${p.nama} (NIK: ${p.nik})`);
+            const tbody = document.querySelector('#table-modal-detail tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                (p.rincian || []).forEach(r => {
+                    const alasanDenda = translateDenda(r.denda_codes); const ketDendaHtml = r.denda > 0 ? `<br><span class="prm-text-xs prm-text-danger">${alasanDenda || r.denda_ket || 'Potongan Denda'}</span>` : '';
+                    tbody.innerHTML += `<tr><td>${r.tgl}</td><td><strong>${r.blok}</strong></td><td>${r.status}</td><td class="prm-text-right">${formatNum(r.basis_kg)}</td><td class="prm-text-right">${formatKg(r.kg)}</td><td class="prm-text-right">${formatNum(r.brondolan)}</td><td class="prm-text-right">${formatRp(r.p_prod)}</td><td class="prm-text-right">${formatRp(r.p_brd)}</td><td class="prm-text-right prm-text-danger">${formatRp(r.denda)}${ketDendaHtml}</td><td class="prm-text-right prm-text-primary" style="font-weight:800;">${formatRp(r.total)}</td></tr>`;
+                });
+            }
+            document.getElementById('modal-detail-pemanen').classList.remove('prm-hidden');
+        }
+        function closeModalDetail() { document.getElementById('modal-detail-pemanen').classList.add('prm-hidden'); appState.currentRincianAdmin = null; }
+
+        let _prevTimer = null;
+        function previewAutoCalc() {
+            clearTimeout(_prevTimer);
+            _prevTimer = setTimeout(async () => {
+                const tgl = document.getElementById('inp-tgl').value, blok = document.getElementById('inp-blok').value, kg = Number(document.getElementById('inp-kg').value || 0), brd = Number(document.getElementById('inp-brd').value || 0), denda = Number(document.getElementById('inp-denda').value || 0);
+                if (!blok || !tgl) { safeSet('prev-status', '-'); return; }
+                try {
+                    const calc = await apiCall('previewPremi', { tgl_panen: tgl, blok: blok, kg_tbs: kg, brondolan_kg: brd, denda_rp: denda });
+                    if(calc.ada) { safeSet('prev-status', `${calc.afdeling} • ${calc.status_asli} (Basis: ${calc.basis_kg})`); safeSet('prev-bersih', formatRp(calc.premi_bersih)); safeSet('prev-kotor', formatRp(calc.premi_kotor)); safeSet('prev-denda', formatRp(calc.denda_rp)); }
+                } catch (err) { safeSet('prev-status', 'Gagal memuat pratinjau'); }
+            }, 400);
+        }
+
+        document.getElementById('form-input-rekon').addEventListener('submit', async (e) => {
+            e.preventDefault(); const btn = document.getElementById('btn-simpan-rekon'); btn.disabled = true;
+            try {
+                await apiCall('simpanDataRekon', { rows: [{ tgl_panen: document.getElementById('inp-tgl').value, nik: document.getElementById('inp-nik').value.trim(), nama: document.getElementById('inp-nama').value.trim(), blok: document.getElementById('inp-blok').value.trim().toUpperCase(), kg_tbs: Number(document.getElementById('inp-kg').value || 0), brondolan_kg: Number(document.getElementById('inp-brd').value || 0), denda_rp: Number(document.getElementById('inp-denda').value || 0) }] });
+                showToast('Tersimpan!'); document.getElementById('inp-kg').value = ''; document.getElementById('inp-brd').value = '0'; document.getElementById('inp-denda').value = '0'; await loadAdminData(true);
+            } catch (err) { showToast('Gagal: ' + err.message, 'error'); } finally { btn.disabled = false; }
+        });
+
+        async function prosesPasteRekon() {
+            const raw = document.getElementById('paste-rekon-area').value.trim(); if (!raw) { showToast('Data kosong.', 'error'); return; }
+            const rows = [], lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            for (let i = 0; i < lines.length; i++) {
+                const cols = lines[i].split('\t').map(c => c.trim());
+                if (cols.length >= 7) rows.push({ tgl_panen: cols[0], nik: cols[1], nama: cols[2], blok: cols[3], kg_tbs: cols[4].replace(/,/g, ''), brondolan_kg: cols[5].replace(/,/g, ''), denda_rp: cols[6].replace(/,/g, '') });
+            }
+            if (!rows.length) { showToast('Format salah.', 'error'); return; }
+            if (!confirm(`Simpan ${rows.length} baris data?`)) return;
+            try { showLoader('global-loader', true); const res = await apiCall('simpanDataRekon', { rows }); showToast(`Berhasil simpan ${res.saved} baris.`); document.getElementById('paste-rekon-area').value = ''; loadAdminData(true); } catch (e) { showToast(e.message, 'error'); } finally { showLoader('global-loader', false); }
+        }
+
+        document.getElementById('form-master-blok').addEventListener('submit', async (e) => {
+            e.preventDefault(); const btn = e.target.querySelector('button'); btn.disabled = true;
+            try { await apiCall('simpanMasterBlok', { afdeling: document.getElementById('mb-afd').value, blok: document.getElementById('mb-blok').value.trim().toUpperCase(), status_blok: document.getElementById('mb-status').value, tahun_tanam: document.getElementById('mb-tt').value, basis_khusus: document.getElementById('mb-basis').value }); showToast('Master blok disimpan!'); document.getElementById('mb-blok').value = ''; document.getElementById('mb-basis').value = '0'; loadAdminData(true); } catch(err) { showToast(err.message, 'error'); } finally { btn.disabled = false; }
+        });
+
+        async function jalankanCekDatabase() {
+            showLoader('global-loader', true); const box = document.getElementById('box-cek-db'); box.classList.remove('prm-hidden'); box.innerHTML = '<div class="prm-loader"></div> Memeriksa...';
+            try {
+                const res = await apiCall('cekDatabasePremi');
+                let h = `<div class="prm-text-sm">Spreadsheet: <strong>${res.spreadsheet}</strong></div><div class="prm-grid prm-grid-cols-2 prm-mt-4">`;
+                res.checks.forEach(c => { h += `<div class="prm-card prm-p-3" style="border-color:${c.ok?'var(--prm-primary)':'var(--prm-danger)'};"><div style="font-weight:700;">${c.sheet}</div><div class="prm-text-xs prm-mt-2 ${c.ok?'prm-text-primary':'prm-text-danger'}">${c.issue}</div></div>`; });
+                box.innerHTML = h + '</div>';
+            } catch(e) { box.innerHTML = `<div class="prm-text-danger">Gagal: ${e.message}</div>`; } finally { showLoader('global-loader', false); }
+        }
+
+        async function jalankanHitungUlang() { if(!confirm("Hitung ulang seluruh data dari awal?")) return; try { showLoader('global-loader', true); await apiCall('hitungUlang'); showToast("Hitung ulang selesai!"); loadAdminData(true); } catch(e) { showToast(e.message, 'error'); } finally { showLoader('global-loader', false); } }
+
+        function showModalPassword(force) { document.getElementById('modal-password').classList.remove('prm-hidden'); document.getElementById('pw-baru').value = ''; document.getElementById('pw-ulang').value = ''; document.getElementById('pw-error').classList.add('prm-hidden'); document.getElementById('btn-pw-batal').style.display = force ? 'none' : 'inline-block'; }
+        function closeModalPassword() { if (!appState.user || appState.user.must_change_pw) return; document.getElementById('modal-password').classList.add('prm-hidden'); }
+        document.getElementById('form-ganti-pw').addEventListener('submit', async (e) => {
+            e.preventDefault(); const p1 = document.getElementById('pw-baru').value, p2 = document.getElementById('pw-ulang').value, err = document.getElementById('pw-error'); err.classList.add('prm-hidden');
+            if (p1 !== p2) { err.innerText = "Password tidak cocok."; err.classList.remove('prm-hidden'); return; }
+            const btn = document.getElementById('btn-pw-simpan'); btn.disabled = true;
+            try { await apiCall('changePassword', { newPassword: p1 }); showToast('Password berhasil diganti!'); appState.user.must_change_pw = false; closeModalPassword(); if (appState.user.role === 'karyawan') loadKaryawanData(); else loadAdminData(true); } catch (e) { err.innerText = e.message; err.classList.remove('prm-hidden'); } finally { btn.disabled = false; }
+        });
+
+        function showModalConfig() { document.getElementById('modal-config').classList.remove('prm-hidden'); document.getElementById('cfg-gas-url').value = runtimeConfig.gasUrl; document.getElementById('cfg-ping-result').classList.add('prm-hidden'); }
+        function closeModalConfig() { document.getElementById('modal-config').classList.add('prm-hidden'); }
+        async function testLiveConnection() {
+            const url = document.getElementById('cfg-gas-url').value.trim(), resBox = document.getElementById('cfg-ping-result'); resBox.classList.remove('prm-hidden'); resBox.innerText = "Menguji..."; resBox.style.background = "var(--prm-surface)";
+            if (!url) { resBox.innerText = "URL kosong."; resBox.style.background = "var(--prm-danger-soft)"; return; }
+            try { const response = await fetch(url, { method: 'POST', body: JSON.stringify({ action: 'pingDatabase' }) }); const res = await response.json(); if (res.ok) { resBox.innerHTML = `✅ Terhubung ke: <strong>${res.data.spreadsheet}</strong>`; resBox.style.background = "var(--prm-primary-soft)"; } else throw new Error(); } catch (e) { resBox.innerText = "❌ Gagal terhubung."; resBox.style.background = "var(--prm-danger-soft)"; }
+        }
+        function saveConnectionConfig() { const url = document.getElementById('cfg-gas-url').value.trim(); if(url) { localStorage.setItem('prm_custom_gas_url', url); runtimeConfig.gasUrl = url; showToast('Tersimpan!'); closeModalConfig(); } }
+
+        window.onload = function() {
+            const t = localStorage.getItem('theme'); if (t === 'light') toggleTheme();
+        };
+    </script>
+</body>
+</html>
